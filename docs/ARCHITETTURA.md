@@ -77,8 +77,8 @@ vuoto. Contromisure nel prototipo:
 - la percentuale **non** dipende da cosa dice il Pupo, ma dal confronto tra quaderno e programma:
   anche se il Pupo "barasse" nelle risposte, la percentuale resterebbe onesta.
 
-Da fare (Ruolo 3): una serie di test con domande su cose **non** spiegate, per misurare quanto spesso
-il Pupo risponde comunque, e migliorare il prompt di conseguenza.
+Da fare: una serie di test con domande su cose **non** spiegate, per misurare quanto spesso
+il Pupo risponde comunque, e migliorare il prompt di conseguenza (vedi [ROADMAP.md](ROADMAP.md)).
 
 ## Limiti noti del prototipo
 

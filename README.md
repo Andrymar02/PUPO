@@ -3,7 +3,8 @@
 **PUPO è un agente AI che fa lo studente: non sa niente e impara solo da quello che gli spieghi tu.**
 Spiegandogli la materia, lo studente impara davvero e scopre, argomento per argomento, quanto è preparato.
 
-Progetto per la Reply Student Tech Clash 2026 – *AI on Campus* (direzione **Learning**).
+Nato per la Reply Student Tech Clash 2026 – *AI on Campus* (direzione **Learning**), ora
+proseguito come side-project personale.
 
 ---
 
@@ -30,8 +31,8 @@ PUPO/
 ├── Design/              # Illustrazioni del Pupo (character sheet, icona, stadi di crescita)
 └── docs/
     ├── ARCHITETTURA.md  # Come funziona: input, mente, confronto, decisioni, output
-    ├── RUOLI.md         # Chi lavora su cosa
-    └── PROMPT_TEAM.md   # Prompt di progetto condiviso per i Claude del team
+    ├── PROGETTO.md      # Contesto, idea completa, decisioni di progetto
+    └── ROADMAP.md       # Prossimi passi tecnici, in ordine di priorità
 ```
 
 ## Avvio rapido (riga di comando)
@@ -152,4 +153,5 @@ davvero imparato, non cosa "sa" il modello.
 ## Documentazione
 
 - [Architettura](docs/ARCHITETTURA.md)
-- [Ruoli e divisione del lavoro](docs/RUOLI.md)
+- [Contesto e decisioni di progetto](docs/PROGETTO.md)
+- [Roadmap](docs/ROADMAP.md)
