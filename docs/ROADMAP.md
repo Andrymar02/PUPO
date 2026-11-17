@@ -53,13 +53,23 @@ LLM come GPT ha già conoscenza generale, quindi "partire vuoto" non è automati
 ## 4. Collegare l'app Expo al backend reale
 
 L'app (`app/`) ha già le schermate (Home, Materiale, Insegna/Interroga, Preparazione,
-Sfide). Da verificare e completare:
+Sfide).
 
-- Che `app/lib/api.ts` punti a un backend effettivamente raggiungibile in sviluppo
-  (`uvicorn` locale) e non solo a dati finti.
-- Avviare `backend/api` e l'app insieme, e percorrere a mano il flusso completo su un
-  dispositivo/simulatore: carica materiale → syllabus → insegna → interroga → vedi la
-  percentuale.
+**Verificato**: `app/lib/api.ts` chiama già l'API reale sugli endpoint giusti (non dati finti),
+con `EXPO_PUBLIC_API_URL` configurabile (default `localhost:8000`) e gestione corretta degli
+errori (es. 503 quando manca la chiave). Controllato end-to-end con backend locale: upload
+materiale, lista materiale, isolamento per studente (header `X-Student`), rifiuto di formati
+non supportati, e build pulita del bundle web Expo contro quell'API. `expo-doctor`, typecheck
+e lint sono ora puliti (aggiornate le dipendenze Expo a versioni patch compatibili con
+`expo install --fix`, e sistemati due problemi preesistenti nel codice scaffolding generato dal
+template: un errore di lint in `useClientOnlyValue.web.ts` e un errore di tipo in
+`ExternalLink.tsx` che compariva solo dopo aver generato i tipi delle route — `npx expo start`
+almeno una volta — perché prima la codegen di `typedRoutes` non era ancora stata eseguita).
+
+Resta da fare **a mano, con la chiave reale**: percorrere il flusso che usa il modello
+(syllabus → insegna → interroga → percentuale) su un dispositivo/simulatore, non solo via API —
+la UI delle schermate Insegna/Interroga/Preparazione non è ancora stata vista a schermo in uso
+reale.
 
 ## 5. Autenticazione dell'API: scelta deliberatamente minimale per ora
 
