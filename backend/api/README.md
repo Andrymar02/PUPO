@@ -1,7 +1,6 @@
-# API (prossimo passo – Ruolo 3)
+# API
 
-Qui andrà l'API HTTP (FastAPI) che l'app usa per parlare con il backend.
-Deve esporre le stesse operazioni della CLI, usando le classi in `pupo/`:
+API HTTP (FastAPI) che l'app usa per parlare con il backend, usando le classi in `pupo/`:
 
 | Endpoint (proposta) | Usa | Sezione dell'app |
 |---|---|---|

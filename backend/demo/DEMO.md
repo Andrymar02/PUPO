@@ -2,8 +2,8 @@
 
 Demo end-to-end per la presentazione: Giulia carica una lezione di Analisi 1, insegna al Pupo
 in modo volutamente diseguale (bene sui Limiti, vago sulle Derivate) e scopre la propria lacuna
-nella barra di preparazione. Stesso esempio usato nello user journey di `docs/PROMPT_TEAM.md`
-(sezione 5).
+nella barra di preparazione. Stesso esempio di materia usato negli esempi di interazione nel
+[README](../../README.md).
 
 ## Prima della presentazione
 

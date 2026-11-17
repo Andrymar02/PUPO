@@ -4,21 +4,23 @@
 
 PUPO è un agente AI che fa lo studente: non sa niente e impara solo da quello che lo studente gli
 spiega. Spiegando la materia al Pupo, lo studente impara davvero (learning by teaching / tecnica
-Feynman) e scopre, argomento per argomento, quanto è preparato. Progetto per la Reply Student Tech
-Clash 2026 – *AI on Campus* (direzione **Learning**, con aggancio ad Assessment come
-autovalutazione). L'architettura si basa su due database separati per studente e materia
-(`reference.db` e `learning.db`) e su un modulo di confronto isolato che calcola una percentuale di
-preparazione per argomento, senza mai far leggere al Pupo il materiale di riferimento. Il Pupo non
-dà punti o bonus all'esame: serve solo a far scoprire allo studente le proprie lacune.
+Feynman) e scopre, argomento per argomento, quanto è preparato. L'architettura si basa su due
+database separati per studente e materia (`reference.db` e `learning.db`) e su un modulo di
+confronto isolato che calcola una percentuale di preparazione per argomento, senza mai far leggere
+al Pupo il materiale di riferimento. Il Pupo non dà punti o bonus all'esame: serve solo a far
+scoprire allo studente le proprie lacune.
 
-Per il contesto completo del progetto (competizione, direzione, user journey, divisione dei ruoli)
-vedi `docs/PROMPT_TEAM.md`, `docs/ARCHITETTURA.md` e `docs/RUOLI.md`.
+Nato come progetto per la Reply Student Tech Clash 2026 (*AI on Campus*, direzione Learning),
+ora proseguito come **side-project personale**, senza scadenze né vincoli di competizione.
 
-## Decisioni di progetto da non cambiare
+Per il contesto completo (origine, decisioni di progetto, rischi) vedi `docs/PROGETTO.md`; per
+come funziona il sistema `docs/ARCHITETTURA.md`; per i prossimi passi `docs/ROADMAP.md`.
 
-Da `docs/PROMPT_TEAM.md`, sezione 4 ("DECISIONI GIÀ PRESE"). Non vanno cambiate di propria
-iniziativa; se una sembra sbagliata o rischiosa, va segnalata come "PROPOSTA DI MODIFICA: ..." ma
-rispettata finché il team non decide altrimenti.
+## Decisioni di progetto da non cambiare senza motivo esplicito
+
+Da `docs/PROGETTO.md`, sezione 3. Sono scelte di design, non vincoli imposti da altri: possono
+cambiare, ma di proposito e con una motivazione scritta (in una PR o in `docs/PROGETTO.md`), non
+di passaggio dentro una modifica che fa altro.
 
 1. Direzione: **Learning** (con aggancio ad Assessment come autovalutazione).
 2. Il Pupo **non dà punti o bonus all'esame**. Nessun coinvolgimento nel voto.
@@ -37,11 +39,12 @@ rispettata finché il team non decide altrimenti.
 
 ## Comandi
 
-Installazione:
+Installazione (richiede **Python 3.10+**; verificare `python3 --version` prima, il default di
+sistema potrebbe essere più vecchio):
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
@@ -57,6 +60,9 @@ non possa accedere al database di riferimento.
 
 ## Regola di lavoro
 
-- Ogni modifica va fatta su un **branch separato** (es. `ruolo3/api`), non direttamente su `main`.
+- Ogni modifica va fatta su un **branch separato** (es. `feat/...`, `fix/...`, `docs/...`), non
+  direttamente su `main`, anche lavorando da soli: mantiene la history leggibile.
 - I **test devono essere sempre verdi prima di ogni commit**.
 - Non fare mai commit di `.env` o della cartella `data/`.
+- Non firmare commit o PR con attribuzioni di co-authorship: git deve riportare solo l'autore
+  umano del progetto.
