@@ -38,10 +38,23 @@ così com'è, seguendo `backend/demo/DEMO.md` (upload → syllabus → teach →
 con la chiave nuova. Serve a scoprire subito eventuali rotture per modelli deprecati o
 dipendenze invecchiate, prima di costruirci sopra.
 
+> Nota: la parte simulabile senza chiave è già verificata. La CLI ha ora una suite di test
+> dedicata (`backend/tests/test_cli.py`, con `FakeLLM`) che prima mancava, e l'app Expo è
+> stata controllata end-to-end contro un'API locale reale (typecheck, lint, `expo-doctor`
+> e build del bundle web puliti). Quello che resta, e richiede la chiave vera, è la qualità
+> delle risposte del modello stesso.
+
 ## 3. Test di "confine": il Pupo non deve sapere ciò che non gli è stato insegnato
 
 Rischio tecnico noto (vedi [ARCHITETTURA.md](ARCHITETTURA.md), "Rischio tecnico n.1"): un
 LLM come GPT ha già conoscenza generale, quindi "partire vuoto" non è automatico.
+
+Script pronto: `backend/demo/boundary_check.py` — insegna al Pupo solo alcuni concetti su tre
+materie diverse e gli chiede di argomenti correlati ma mai spiegati, stampando ogni risposta
+perché vada riletta a mano (l'euristica inclusa è solo un indizio, non un giudice affidabile).
+Richiede `OPENAI_API_KEY` ed esegue chiamate reali (poche, costo minimo): lanciarlo con
+`python demo/boundary_check.py` una volta pronta la chiave, prima di fidarsi del comportamento
+del Pupo su materie nuove.
 
 - Scrivere una suite di domande su argomenti **mai spiegati** al Pupo (in materie diverse,
   non solo la demo di Analisi 1) e verificare quante volte risponde comunque usando
