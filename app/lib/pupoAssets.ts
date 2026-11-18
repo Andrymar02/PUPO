@@ -25,4 +25,8 @@ export const expressions = {
   confuso: require('../assets/images/pupo/espressioni/pupo-confuso.png'),
   felice: require('../assets/images/pupo/espressioni/pupo-felice-che-festeggia.png'),
   neutro: require('../assets/images/pupo/espressioni/pupo-neutro.png'),
+  addormentato: require('../assets/images/pupo/espressioni/pupo-addormentato.png'),
+  competitivo: require('../assets/images/pupo/espressioni/pupo-competitivo.png'),
+  illuminato: require('../assets/images/pupo/espressioni/pupo-illuminato.png'),
+  triste: require('../assets/images/pupo/espressioni/pupo-triste.png'),
 };
