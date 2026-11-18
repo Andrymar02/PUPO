@@ -1,17 +1,24 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import { useAppTheme } from '@/components/Themed';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const theme = useAppTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+        },
+        tabBarLabelStyle: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
+        headerStyle: { backgroundColor: theme.surface },
+        headerTitleStyle: { fontFamily: 'Baloo2_700Bold', color: theme.textPrimary },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen

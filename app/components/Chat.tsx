@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, Platform, StyleSheet, TextInput, View, type TextInputKeyPressEvent } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { pupoPalette } from '@/constants/Colors';
-import { Text } from '@/components/Themed';
+import { Text, useAppTheme } from '@/components/Themed';
+import { Button } from '@/components/ui/Button';
+import { font, radius, spacing } from '@/constants/theme';
+import { expressions } from '@/lib/pupoAssets';
 
 export interface ChatMessage {
   role: 'student' | 'pupo';
@@ -16,6 +19,7 @@ export function Chat({
   placeholder: string;
   onSend: (text: string) => Promise<string>;
 }) {
+  const theme = useAppTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -38,61 +42,84 @@ export function Chat({
     }
   };
 
+  // Solo su web: Invio manda, Shift+Invio va a capo. react-native-web inoltra qui l'evento
+  // DOM reale (non solo `key`, come da tipo ufficiale, ma anche `shiftKey`/`preventDefault`:
+  // verificato in node_modules/react-native-web/dist/exports/TextInput/index.js, dove lo
+  // stesso controllo decide se chiamare onSubmitEditing). Su nativo Invio va sempre a capo,
+  // si manda con il bottone, com'è normale su mobile.
+  const handleWebKeyPress = (e: TextInputKeyPressEvent) => {
+    const webEvent = e as unknown as { key: string; shiftKey: boolean; preventDefault: () => void };
+    if (webEvent.key === 'Enter' && !webEvent.shiftKey) {
+      webEvent.preventDefault();
+      send();
+    }
+  };
+
   return (
     <View style={styles.wrap}>
       <FlatList
         data={messages}
         keyExtractor={(_, i) => String(i)}
         renderItem={({ item }) => (
-          <View style={[styles.bubble, item.role === 'student' ? styles.studentBubble : styles.pupoBubble]}>
-            <Text style={styles.bubbleText}>{item.text}</Text>
-          </View>
+          <Animated.View
+            entering={FadeInUp.duration(220)}
+            style={[styles.row, item.role === 'student' ? styles.rowEnd : styles.rowStart]}>
+            {item.role === 'pupo' && <Image source={expressions.neutro} style={styles.avatar} />}
+            <View
+              style={[
+                styles.bubble,
+                item.role === 'student'
+                  ? { backgroundColor: theme.accent, borderBottomRightRadius: 4 }
+                  : { backgroundColor: theme.surfaceAlt, borderBottomLeftRadius: 4 },
+              ]}>
+              <Text
+                style={[
+                  font.body,
+                  { color: item.role === 'student' ? theme.onAccent : theme.textPrimary },
+                ]}>
+                {item.text}
+              </Text>
+            </View>
+          </Animated.View>
         )}
         style={styles.list}
-        contentContainerStyle={{ gap: 8, paddingVertical: 8 }}
+        contentContainerStyle={styles.listContent}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[font.caption, { color: theme.danger }]}>{error}</Text> : null}
       <View style={styles.inputRow}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, font.body, { borderColor: theme.border, color: theme.textPrimary }]}
           placeholder={placeholder}
+          placeholderTextColor={theme.textSecondary}
           value={input}
           onChangeText={setInput}
           onSubmitEditing={send}
+          onKeyPress={Platform.OS === 'web' ? handleWebKeyPress : undefined}
           editable={!sending}
           multiline
         />
-        <Pressable style={styles.sendButton} onPress={send} disabled={sending}>
-          <Text style={styles.sendText}>{sending ? '...' : 'Invia'}</Text>
-        </Pressable>
+        <Button label="Invia" onPress={send} disabled={sending} loading={sending} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, gap: 8 },
+  wrap: { flex: 1, gap: spacing.s },
   list: { flex: 1 },
-  bubble: { maxWidth: '85%', padding: 10, borderRadius: 12 },
-  studentBubble: { alignSelf: 'flex-end', backgroundColor: pupoPalette.purple + '22' },
-  pupoBubble: { alignSelf: 'flex-start', backgroundColor: pupoPalette.yellow + '22' },
-  bubbleText: { fontSize: 15 },
-  error: { color: pupoPalette.coral, fontSize: 13 },
-  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  listContent: { gap: spacing.s, paddingVertical: spacing.s },
+  row: { flexDirection: 'row', gap: spacing.s, alignItems: 'flex-end', maxWidth: '88%' },
+  rowStart: { alignSelf: 'flex-start' },
+  rowEnd: { alignSelf: 'flex-end' },
+  avatar: { width: 28, height: 36, resizeMode: 'contain' },
+  bubble: { padding: spacing.m, borderRadius: radius.lg },
+  inputRow: { flexDirection: 'row', gap: spacing.s, alignItems: 'flex-end' },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: pupoPalette.navy + '33',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: radius.md,
+    padding: spacing.m,
     minHeight: 40,
     maxHeight: 120,
   },
-  sendButton: {
-    backgroundColor: pupoPalette.purple,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  sendText: { color: '#fff', fontWeight: '600' },
 });

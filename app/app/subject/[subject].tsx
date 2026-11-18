@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
-import { ProgressBar } from '@/components/ProgressBar';
 import { Chat } from '@/components/Chat';
-import { pupoPalette } from '@/constants/Colors';
-import { Text } from '@/components/Themed';
+import { ProgressBar } from '@/components/ProgressBar';
+import { Text, useAppTheme } from '@/components/Themed';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { SegmentedTabs } from '@/components/ui/SegmentedTabs';
+import { font, maxContentWidth, radius, spacing } from '@/constants/theme';
 import {
   addMaterialText,
   ApiError,
@@ -15,50 +19,77 @@ import {
   quiz,
   teach,
 } from '@/lib/api';
-import { stageImageFor } from '@/lib/pupoAssets';
+import { expressions, stageImageFor, subjectImageFor } from '@/lib/pupoAssets';
 import { useStudent } from '@/lib/student';
 import type { MaterialDoc, ProgressReport, SyllabusTopic } from '@/lib/types';
 
 const REVIEW_REMINDER_DAYS = 3;
 type Section = 'materiale' | 'insegna' | 'interroga' | 'preparazione';
 
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: 'materiale', label: 'Materiale' },
+  { key: 'insegna', label: 'Insegna' },
+  { key: 'interroga', label: 'Interroga' },
+  { key: 'preparazione', label: 'Preparazione' },
+];
+
 export default function SubjectScreen() {
   const { subject } = useLocalSearchParams<{ subject: string }>();
-  const { student, loading } = useStudent();
+  const { student, loading, colorFor } = useStudent();
   const [section, setSection] = useState<Section>('materiale');
+  // Una sezione entra qui alla prima visita e ci resta montata (nascosta se non attiva):
+  // così Insegna/Interroga non perdono la chat cambiando tab, e Preparazione non rifà la
+  // chiamata al giudice (a pagamento) ogni volta che si torna su quel tab.
+  const [visited, setVisited] = useState<Set<Section>>(() => new Set([section]));
+  const theme = useAppTheme();
+
+  const changeSection = (next: Section) => {
+    setSection(next);
+    setVisited((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+  };
 
   if (loading || !subject) return null;
 
   return (
     <>
       <Stack.Screen options={{ title: subject }} />
-      <View style={styles.tabs}>
-        {(['materiale', 'insegna', 'interroga', 'preparazione'] as Section[]).map((s) => (
-          <Pressable
-            key={s}
-            style={[styles.tabButton, section === s && styles.tabButtonActive]}
-            onPress={() => setSection(s)}>
-            <Text style={[styles.tabText, section === s && styles.tabTextActive]}>
-              {sectionLabel(s)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.content}>
-        {section === 'materiale' && <MaterialeSection subject={subject} student={student} />}
-        {section === 'insegna' && <InsegnaSection subject={subject} student={student} />}
-        {section === 'interroga' && <InterrogaSection subject={subject} student={student} />}
-        {section === 'preparazione' && <PreparazioneSection subject={subject} student={student} />}
+      <View style={[styles.screen, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <View style={[styles.headerBlob, { backgroundColor: colorFor(subject) + '2E' }]}>
+            <Image source={subjectImageFor(subject)} style={styles.headerImage} />
+          </View>
+          <Text style={font.title}>{subject}</Text>
+        </View>
+        <SegmentedTabs options={SECTIONS} value={section} onChange={changeSection} />
+        <View style={styles.body}>
+          {visited.has('materiale') && (
+            <View style={[styles.sectionWrapper, section !== 'materiale' && styles.hidden]}>
+              <MaterialeSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('insegna') && (
+            <View style={[styles.sectionWrapper, section !== 'insegna' && styles.hidden]}>
+              <InsegnaSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('interroga') && (
+            <View style={[styles.sectionWrapper, section !== 'interroga' && styles.hidden]}>
+              <InterrogaSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('preparazione') && (
+            <View style={[styles.sectionWrapper, section !== 'preparazione' && styles.hidden]}>
+              <PreparazioneSection subject={subject} student={student} />
+            </View>
+          )}
+        </View>
       </View>
     </>
   );
 }
 
-function sectionLabel(s: Section) {
-  return { materiale: 'Materiale', insegna: 'Insegna', interroga: 'Interroga', preparazione: 'Preparazione' }[s];
-}
-
 function MaterialeSection({ subject, student }: { subject: string; student: string }) {
+  const theme = useAppTheme();
   const [text, setText] = useState('');
   const [source, setSource] = useState('');
   const [docs, setDocs] = useState<MaterialDoc[] | null>(null);
@@ -72,49 +103,60 @@ function MaterialeSection({ subject, student }: { subject: string; student: stri
   useEffect(refresh, [refresh]);
 
   return (
-    <ScrollView contentContainerStyle={styles.section}>
-      <Text style={styles.label}>Incolla appunti o sbobinatura</Text>
-      <TextInput
-        style={styles.textarea}
-        value={text}
-        onChangeText={setText}
-        multiline
-        placeholder="Testo della lezione…"
-      />
-      <TextInput
-        style={styles.input}
-        value={source}
-        onChangeText={setSource}
-        placeholder="nome del documento (es. lezione1.txt)"
-      />
-      <Pressable
-        style={styles.button}
-        onPress={async () => {
-          if (!text.trim()) return;
-          setStatus('Carico…');
-          try {
-            await addMaterialText(subject, student, text, source || 'appunti.txt');
-            setText('');
-            setSource('');
-            setStatus('Caricato.');
-            refresh();
-          } catch (e) {
-            setStatus(e instanceof Error ? e.message : 'Errore');
-          }
-        }}>
-        <Text style={styles.buttonText}>Carica</Text>
-      </Pressable>
+    <ScrollView contentContainerStyle={styles.sectionContent}>
+      <Card style={styles.formCard}>
+        <Text style={font.label}>Incolla appunti o sbobinatura</Text>
+        <TextInput
+          style={[styles.textarea, font.body, { borderColor: theme.border, color: theme.textPrimary }]}
+          value={text}
+          onChangeText={setText}
+          multiline
+          placeholder="Testo della lezione…"
+          placeholderTextColor={theme.textSecondary}
+        />
+        <TextInput
+          style={[styles.input, font.body, { borderColor: theme.border, color: theme.textPrimary }]}
+          value={source}
+          onChangeText={setSource}
+          placeholder="nome del documento (es. lezione1.txt)"
+          placeholderTextColor={theme.textSecondary}
+        />
+        <Button
+          label="Carica"
+          onPress={async () => {
+            if (!text.trim()) return;
+            setStatus('Carico…');
+            try {
+              await addMaterialText(subject, student, text, source || 'appunti.txt');
+              setText('');
+              setSource('');
+              setStatus('Caricato.');
+              refresh();
+            } catch (e) {
+              setStatus(e instanceof Error ? e.message : 'Errore');
+            }
+          }}
+        />
+      </Card>
 
-      <Text style={styles.label}>Materiale già caricato</Text>
-      {(docs ?? []).length === 0 ? <Text style={styles.muted}>Niente ancora.</Text> : null}
-      {(docs ?? []).map((d) => (
-        <Text key={d.id} style={styles.docRow}>
-          {d.source} — {d.kind}, {d.words} parole
-        </Text>
-      ))}
+      <Text style={[font.subtitle, { color: theme.textSecondary }]}>Materiale già caricato</Text>
+      {(docs ?? []).length === 0 ? (
+        <Text style={[font.body, { color: theme.textSecondary }]}>Niente ancora.</Text>
+      ) : (
+        (docs ?? []).map((d) => (
+          <Card key={d.id} style={styles.docRow}>
+            <Text style={[font.bodyStrong, styles.docTitle]} numberOfLines={1}>
+              {d.source}
+            </Text>
+            <Badge label={d.kind === 'upload' ? 'Caricato' : 'Trascrizione'} tone="accent" />
+            <Text style={[font.caption, { color: theme.textSecondary }]}>{d.words} parole</Text>
+          </Card>
+        ))
+      )}
 
-      <Pressable
-        style={styles.button}
+      <Button
+        label="Crea programma"
+        variant="secondary"
         onPress={async () => {
           setStatus('Creo il programma…');
           try {
@@ -124,38 +166,46 @@ function MaterialeSection({ subject, student }: { subject: string; student: stri
           } catch (e) {
             setStatus(e instanceof Error ? e.message : 'Errore');
           }
-        }}>
-        <Text style={styles.buttonText}>Crea programma</Text>
-      </Pressable>
-      {status ? <Text style={styles.muted}>{status}</Text> : null}
+        }}
+      />
+      {status ? <Text style={[font.caption, { color: theme.textSecondary }]}>{status}</Text> : null}
       {topics ? (
-        <Text style={styles.muted}>
-          Argomenti trovati: {topics.map((t) => `${t.name} (${t.concepts.length})`).join(', ')}
-        </Text>
+        <Card tint={theme.successSoft}>
+          <Text style={font.body}>
+            Argomenti trovati: {topics.map((t) => `${t.name} (${t.concepts.length})`).join(', ')}
+          </Text>
+        </Card>
       ) : null}
     </ScrollView>
   );
 }
 
 function InsegnaSection({ subject, student }: { subject: string; student: string }) {
+  const theme = useAppTheme();
   return (
-    <View style={styles.section}>
-      <Text style={styles.muted}>Spiega l&apos;argomento al Pupo con parole tue.</Text>
+    <View style={styles.chatSection}>
+      <Text style={[font.body, { color: theme.textSecondary }]}>
+        Spiega l&apos;argomento al Pupo con parole tue.
+      </Text>
       <Chat placeholder="Spiega qui…" onSend={(text) => teach(subject, student, text)} />
     </View>
   );
 }
 
 function InterrogaSection({ subject, student }: { subject: string; student: string }) {
+  const theme = useAppTheme();
   return (
-    <View style={styles.section}>
-      <Text style={styles.muted}>Fai domande per vedere cosa ha capito il Pupo.</Text>
+    <View style={styles.chatSection}>
+      <Text style={[font.body, { color: theme.textSecondary }]}>
+        Fai domande per vedere cosa ha capito il Pupo.
+      </Text>
       <Chat placeholder="Fai una domanda…" onSend={(text) => quiz(subject, student, text)} />
     </View>
   );
 }
 
 function PreparazioneSection({ subject, student }: { subject: string; student: string }) {
+  const theme = useAppTheme();
   const [report, setReport] = useState<ProgressReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -175,14 +225,17 @@ function PreparazioneSection({ subject, student }: { subject: string; student: s
     report.days_since_last_review >= REVIEW_REMINDER_DAYS;
 
   return (
-    <ScrollView contentContainerStyle={styles.section}>
+    <ScrollView contentContainerStyle={styles.sectionContent}>
       {report && <Image source={stageImageFor(report.overall_percent)} style={styles.stageImage} />}
       {needsReview && (
-        <Text style={styles.reviewBanner}>
-          Non ripassi questa materia da {report?.days_since_last_review} giorni.
-        </Text>
+        <Card tint={theme.dangerSoft} style={styles.reviewBanner}>
+          <Image source={expressions.addormentato} style={styles.reviewImage} />
+          <Text style={[font.bodyStrong, styles.reviewText, { color: theme.danger }]}>
+            Non ripassi questa materia da {report?.days_since_last_review} giorni.
+          </Text>
+        </Card>
       )}
-      {error && <Text style={styles.muted}>{error}</Text>}
+      {error && <Text style={[font.body, { color: theme.textSecondary }]}>{error}</Text>}
       {report && (
         <>
           <ProgressBar percent={report.overall_percent} label="Totale" />
@@ -191,57 +244,52 @@ function PreparazioneSection({ subject, student }: { subject: string; student: s
           ))}
         </>
       )}
-      <Pressable style={styles.button} onPress={refresh}>
-        <Text style={styles.buttonText}>Aggiorna</Text>
-      </Pressable>
+      <Button label="Aggiorna" variant="secondary" onPress={refresh} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 12 },
-  tabButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: pupoPalette.navy + '14',
+  screen: {
+    flex: 1,
+    padding: spacing.l,
+    gap: spacing.m,
+    width: '100%',
+    maxWidth: maxContentWidth,
+    alignSelf: 'center',
   },
-  tabButtonActive: { backgroundColor: pupoPalette.purple },
-  tabText: { fontSize: 13, fontWeight: '600' },
-  tabTextActive: { color: '#fff' },
-  content: { flex: 1, paddingHorizontal: 12 },
-  section: { gap: 10, paddingBottom: 24 },
-  label: { fontWeight: '700', marginTop: 8 },
-  muted: { opacity: 0.65, fontSize: 13 },
-  docRow: { fontSize: 13 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.m },
+  headerBlob: {
+    width: 64,
+    height: 76,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerImage: { width: 48, height: 60, resizeMode: 'contain' },
+  body: { flex: 1 },
+  sectionWrapper: { flex: 1 },
+  hidden: { display: 'none' },
+  sectionContent: { gap: spacing.m, paddingBottom: spacing.xl },
+  formCard: { gap: spacing.s, alignItems: 'flex-start' },
   textarea: {
+    alignSelf: 'stretch',
     borderWidth: 1,
-    borderColor: pupoPalette.navy + '33',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: radius.md,
+    padding: spacing.m,
     minHeight: 100,
   },
   input: {
+    alignSelf: 'stretch',
     borderWidth: 1,
-    borderColor: pupoPalette.navy + '33',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: radius.md,
+    padding: spacing.m,
   },
-  button: {
-    alignSelf: 'flex-start',
-    backgroundColor: pupoPalette.purple,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s },
+  docTitle: { flex: 1 },
+  chatSection: { flex: 1, gap: spacing.s },
   stageImage: { width: 90, height: 115, resizeMode: 'contain', alignSelf: 'center' },
-  reviewBanner: {
-    backgroundColor: pupoPalette.coral,
-    color: '#fff',
-    fontWeight: '700',
-    padding: 10,
-    borderRadius: 10,
-    textAlign: 'center',
-  },
+  reviewBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.s },
+  reviewImage: { width: 40, height: 52, resizeMode: 'contain' },
+  reviewText: { flex: 1 },
 });

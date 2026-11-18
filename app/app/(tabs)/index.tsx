@@ -1,21 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { pupoPalette } from '@/constants/Colors';
-import { Text } from '@/components/Themed';
+import { ProgressBar } from '@/components/ProgressBar';
+import { Text, useAppTheme } from '@/components/Themed';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Screen } from '@/components/ui/Screen';
+import { font, radius, spacing, subjectPalette } from '@/constants/theme';
 import { ApiError, getProgress } from '@/lib/api';
-import { stageImageFor } from '@/lib/pupoAssets';
+import { expressions, stageImageFor } from '@/lib/pupoAssets';
 import { useStudent } from '@/lib/student';
 
 const REVIEW_REMINDER_DAYS = 3;
 
 type SubjectStatus = { percent: number; days: number | null } | 'no-syllabus' | 'loading' | 'error';
 
+function statusLabel(status: SubjectStatus | undefined) {
+  if (status === 'loading') return 'Carico…';
+  if (status === 'no-syllabus') return 'Nessun programma ancora';
+  if (status === 'error') return 'Errore nel caricare lo stato';
+  return '';
+}
+
 export default function HomeScreen() {
-  const { loading, student, setStudent, subjects, addSubject } = useStudent();
+  const { loading, student, setStudent, subjects, addSubject, colorFor } = useStudent();
   const [statuses, setStatuses] = useState<Record<string, SubjectStatus>>({});
   const [newSubject, setNewSubject] = useState('');
+  const [newColor, setNewColor] = useState<string>(subjectPalette[0]);
+  const theme = useAppTheme();
 
   const refresh = useCallback(() => {
     for (const subject of subjects) {
@@ -45,110 +59,125 @@ export default function HomeScreen() {
   if (loading) return null;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Studente</Text>
+    <Screen>
+      <Text style={font.title}>Ciao{student ? `, ${student}` : ''} 👋</Text>
       <TextInput
-        style={styles.studentInput}
+        style={[styles.studentInput, font.body, { borderColor: theme.border, color: theme.textPrimary }]}
         value={student}
         onChangeText={setStudent}
-        placeholder="nome studente"
+        placeholder="il tuo nome"
+        placeholderTextColor={theme.textSecondary}
       />
 
-      <Text style={styles.heading}>Le mie materie</Text>
-      {subjects.length === 0 ? <Text style={styles.empty}>Nessuna materia ancora.</Text> : null}
+      <Text style={[font.subtitle, styles.sectionLabel, { color: theme.textSecondary }]}>
+        Le tue materie
+      </Text>
+
+      {subjects.length === 0 ? (
+        <Card style={styles.emptyCard}>
+          <Image source={expressions.curioso} style={styles.emptyImage} />
+          <Text style={[font.body, styles.emptyText, { color: theme.textSecondary }]}>
+            Nessuna materia ancora. Aggiungine una per far nascere il tuo primo Pupo.
+          </Text>
+        </Card>
+      ) : null}
+
       {subjects.map((subject) => {
         const status = statuses[subject];
         const percent = typeof status === 'object' ? status.percent : 0;
         const needsReview =
           typeof status === 'object' && status.days !== null && status.days >= REVIEW_REMINDER_DAYS;
         return (
-          <Pressable
+          <Card
             key={subject}
-            style={styles.row}
-            onPress={() => router.push({ pathname: '/subject/[subject]', params: { subject } })}>
-            <Image source={stageImageFor(percent)} style={styles.rowImage} />
-            <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>{subject}</Text>
-              {status === 'loading' && <Text style={styles.rowSubtitle}>Carico…</Text>}
-              {status === 'no-syllabus' && <Text style={styles.rowSubtitle}>Nessun programma ancora</Text>}
-              {status === 'error' && <Text style={styles.rowSubtitle}>Errore nel caricare lo stato</Text>}
-              {typeof status === 'object' && <Text style={styles.rowSubtitle}>Preparazione: {status.percent}%</Text>}
-              {needsReview && <Text style={styles.reviewBadge}>Ripassa {subject}</Text>}
+            onPress={() => router.push({ pathname: '/subject/[subject]', params: { subject } })}
+            style={styles.row}>
+            <View style={[styles.avatarBlob, { backgroundColor: colorFor(subject) + '2E' }]}>
+              <Image source={stageImageFor(percent)} style={styles.rowImage} />
             </View>
-          </Pressable>
+            <View style={styles.rowBody}>
+              <View style={styles.rowTitleLine}>
+                <Text style={font.subtitle}>{subject}</Text>
+                {needsReview && <Badge label="Ripassa" tone="danger" />}
+              </View>
+              {typeof status === 'object' ? (
+                <ProgressBar percent={percent} />
+              ) : (
+                <Text style={[font.caption, { color: theme.textSecondary }]}>{statusLabel(status)}</Text>
+              )}
+            </View>
+          </Card>
         );
       })}
 
-      <Text style={styles.heading}>+ Nuova materia</Text>
-      <View style={styles.newRow}>
+      <Text style={[font.subtitle, styles.sectionLabel, { color: theme.textSecondary }]}>
+        Nuova materia
+      </Text>
+      <Card style={styles.newCard}>
         <TextInput
-          style={styles.newInput}
+          style={[styles.newInput, font.body, { borderColor: theme.border, color: theme.textPrimary }]}
           value={newSubject}
           onChangeText={setNewSubject}
           placeholder="es. analisi1"
+          placeholderTextColor={theme.textSecondary}
           autoCapitalize="none"
         />
-        <Pressable
-          style={styles.newButton}
+        <Text style={[font.label, { color: theme.textSecondary }]}>Colore del Pupo</Text>
+        <View style={styles.palette}>
+          {subjectPalette.map((color) => (
+            <Pressable
+              key={color}
+              onPress={() => setNewColor(color)}
+              style={[
+                styles.swatch,
+                { backgroundColor: color },
+                newColor === color && [styles.swatchSelected, { borderColor: theme.textPrimary }],
+              ]}
+            />
+          ))}
+        </View>
+        <Button
+          label="Aggiungi"
           onPress={() => {
             if (!newSubject.trim()) return;
-            addSubject(newSubject.trim());
+            addSubject(newSubject.trim(), newColor);
             setNewSubject('');
-          }}>
-          <Text style={styles.newButtonText}>Aggiungi</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+          }}
+        />
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 10 },
-  heading: { fontSize: 16, fontWeight: '700', marginTop: 12 },
   studentInput: {
     borderWidth: 1,
-    borderColor: pupoPalette.navy + '33',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: radius.md,
+    padding: spacing.m,
   },
-  empty: { opacity: 0.6 },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
+  sectionLabel: { marginTop: spacing.s },
+  emptyCard: { alignItems: 'center', gap: spacing.s },
+  emptyImage: { width: 72, height: 92, resizeMode: 'contain' },
+  emptyText: { textAlign: 'center' },
+  row: { flexDirection: 'row', gap: spacing.m, alignItems: 'center' },
+  avatarBlob: {
+    width: 72,
+    height: 88,
+    borderRadius: radius.lg,
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 14,
-    backgroundColor: pupoPalette.purple + '14',
-  },
-  rowImage: { width: 56, height: 72, resizeMode: 'contain' },
-  rowBody: { flex: 1, gap: 2 },
-  rowTitle: { fontSize: 16, fontWeight: '700' },
-  rowSubtitle: { fontSize: 13, opacity: 0.7 },
-  reviewBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: pupoPalette.coral,
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    overflow: 'hidden',
-  },
-  newRow: { flexDirection: 'row', gap: 8 },
-  newInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: pupoPalette.navy + '33',
-    borderRadius: 10,
-    padding: 10,
-  },
-  newButton: {
-    backgroundColor: pupoPalette.purple,
-    borderRadius: 10,
-    paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  newButtonText: { color: '#fff', fontWeight: '700' },
+  rowImage: { width: 56, height: 72, resizeMode: 'contain' },
+  rowBody: { flex: 1, gap: spacing.xs, alignItems: 'stretch' },
+  rowTitleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.s },
+  newCard: { gap: spacing.s, alignItems: 'flex-start' },
+  newInput: {
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.m,
+  },
+  palette: { flexDirection: 'row', gap: spacing.s, flexWrap: 'wrap' },
+  swatch: { width: 32, height: 32, borderRadius: radius.pill },
+  swatchSelected: { borderWidth: 3 },
 });
