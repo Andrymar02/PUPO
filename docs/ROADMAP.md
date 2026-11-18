@@ -112,3 +112,17 @@ solo sulla demo di Analisi 1. Prima di fidarsene:
 
 Arricchire `backend/pupo/prompts.py` con più esempi di dialogo (spiegazione corretta,
 vaga, sbagliata) per rendere le domande del Pupo più naturali e meno ripetitive.
+
+## 8. Redesign frontend — fatto
+
+L'app era rimasta allo stile minimo dell'hackathon (nessun sistema di design). Fatto:
+token di spaziatura/raggi/tipografia e temi light/dark derivati dalla palette del Pupo
+(`app/constants/theme.ts`), font Baloo 2 + Nunito, componenti UI riutilizzabili
+(`app/components/ui/`), animazioni misurate (reanimated, già una dipendenza) su barra di
+progresso, bolle della chat e controllo a schede, e le 4 espressioni del Pupo che erano
+già disegnate ma mai usate (addormentato, competitivo, illuminato, triste).
+
+Non coperto da questo giro di lavoro, perché non riguarda il frontend: autenticazione
+multi-utente, hosting del backend, database non-SQLite-locale, consenso GDPR per le
+registrazioni, costi a scala — restano da affrontare prima di un uso reale con altri
+utenti, vedi [PROGETTO.md](PROGETTO.md) sezione "Rischi da affrontare".
