@@ -37,7 +37,16 @@ export default function SubjectScreen() {
   const { subject } = useLocalSearchParams<{ subject: string }>();
   const { student, loading } = useStudent();
   const [section, setSection] = useState<Section>('materiale');
+  // Una sezione entra qui alla prima visita e ci resta montata (nascosta se non attiva):
+  // così Insegna/Interroga non perdono la chat cambiando tab, e Preparazione non rifà la
+  // chiamata al giudice (a pagamento) ogni volta che si torna su quel tab.
+  const [visited, setVisited] = useState<Set<Section>>(() => new Set([section]));
   const theme = useAppTheme();
+
+  const changeSection = (next: Section) => {
+    setSection(next);
+    setVisited((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+  };
 
   if (loading || !subject) return null;
 
@@ -49,12 +58,28 @@ export default function SubjectScreen() {
           <Image source={subjectImageFor(subject)} style={styles.headerImage} />
           <Text style={font.title}>{subject}</Text>
         </View>
-        <SegmentedTabs options={SECTIONS} value={section} onChange={setSection} />
+        <SegmentedTabs options={SECTIONS} value={section} onChange={changeSection} />
         <View style={styles.body}>
-          {section === 'materiale' && <MaterialeSection subject={subject} student={student} />}
-          {section === 'insegna' && <InsegnaSection subject={subject} student={student} />}
-          {section === 'interroga' && <InterrogaSection subject={subject} student={student} />}
-          {section === 'preparazione' && <PreparazioneSection subject={subject} student={student} />}
+          {visited.has('materiale') && (
+            <View style={[styles.sectionWrapper, section !== 'materiale' && styles.hidden]}>
+              <MaterialeSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('insegna') && (
+            <View style={[styles.sectionWrapper, section !== 'insegna' && styles.hidden]}>
+              <InsegnaSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('interroga') && (
+            <View style={[styles.sectionWrapper, section !== 'interroga' && styles.hidden]}>
+              <InterrogaSection subject={subject} student={student} />
+            </View>
+          )}
+          {visited.has('preparazione') && (
+            <View style={[styles.sectionWrapper, section !== 'preparazione' && styles.hidden]}>
+              <PreparazioneSection subject={subject} student={student} />
+            </View>
+          )}
         </View>
       </View>
     </>
@@ -227,6 +252,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.m },
   headerImage: { width: 48, height: 60, resizeMode: 'contain' },
   body: { flex: 1 },
+  sectionWrapper: { flex: 1 },
+  hidden: { display: 'none' },
   sectionContent: { gap: spacing.m, paddingBottom: spacing.xl },
   formCard: { gap: spacing.s, alignItems: 'flex-start' },
   textarea: {

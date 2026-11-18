@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, Image, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, Platform, StyleSheet, TextInput, View, type TextInputKeyPressEvent } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { Text, useAppTheme } from '@/components/Themed';
@@ -42,6 +42,19 @@ export function Chat({
     }
   };
 
+  // Solo su web: Invio manda, Shift+Invio va a capo. react-native-web inoltra qui l'evento
+  // DOM reale (non solo `key`, come da tipo ufficiale, ma anche `shiftKey`/`preventDefault`:
+  // verificato in node_modules/react-native-web/dist/exports/TextInput/index.js, dove lo
+  // stesso controllo decide se chiamare onSubmitEditing). Su nativo Invio va sempre a capo,
+  // si manda con il bottone, com'è normale su mobile.
+  const handleWebKeyPress = (e: TextInputKeyPressEvent) => {
+    const webEvent = e as unknown as { key: string; shiftKey: boolean; preventDefault: () => void };
+    if (webEvent.key === 'Enter' && !webEvent.shiftKey) {
+      webEvent.preventDefault();
+      send();
+    }
+  };
+
   return (
     <View style={styles.wrap}>
       <FlatList
@@ -81,6 +94,7 @@ export function Chat({
           value={input}
           onChangeText={setInput}
           onSubmitEditing={send}
+          onKeyPress={Platform.OS === 'web' ? handleWebKeyPress : undefined}
           editable={!sending}
           multiline
         />
