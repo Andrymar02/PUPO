@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { SegmentedTabs } from '@/components/ui/SegmentedTabs';
-import { font, radius, spacing } from '@/constants/theme';
+import { font, maxContentWidth, radius, spacing } from '@/constants/theme';
 import {
   addMaterialText,
   ApiError,
@@ -35,7 +35,7 @@ const SECTIONS: { key: Section; label: string }[] = [
 
 export default function SubjectScreen() {
   const { subject } = useLocalSearchParams<{ subject: string }>();
-  const { student, loading } = useStudent();
+  const { student, loading, colorFor } = useStudent();
   const [section, setSection] = useState<Section>('materiale');
   // Una sezione entra qui alla prima visita e ci resta montata (nascosta se non attiva):
   // così Insegna/Interroga non perdono la chat cambiando tab, e Preparazione non rifà la
@@ -55,7 +55,9 @@ export default function SubjectScreen() {
       <Stack.Screen options={{ title: subject }} />
       <View style={[styles.screen, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
-          <Image source={subjectImageFor(subject)} style={styles.headerImage} />
+          <View style={[styles.headerBlob, { backgroundColor: colorFor(subject) + '2E' }]}>
+            <Image source={subjectImageFor(subject)} style={styles.headerImage} />
+          </View>
           <Text style={font.title}>{subject}</Text>
         </View>
         <SegmentedTabs options={SECTIONS} value={section} onChange={changeSection} />
@@ -248,8 +250,22 @@ function PreparazioneSection({ subject, student }: { subject: string; student: s
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, padding: spacing.l, gap: spacing.m },
+  screen: {
+    flex: 1,
+    padding: spacing.l,
+    gap: spacing.m,
+    width: '100%',
+    maxWidth: maxContentWidth,
+    alignSelf: 'center',
+  },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.m },
+  headerBlob: {
+    width: 64,
+    height: 76,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerImage: { width: 48, height: 60, resizeMode: 'contain' },
   body: { flex: 1 },
   sectionWrapper: { flex: 1 },

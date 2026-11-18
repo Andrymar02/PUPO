@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View, type ScrollViewProps, type ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/components/Themed';
-import { spacing } from '@/constants/theme';
+import { maxContentWidth, spacing } from '@/constants/theme';
 
 // Wrapper comune per le schermate: sfondo dal tema + padding coerente.
 // `scroll` usa ScrollView (per contenuti più lunghi di uno schermo), altrimenti un View flex:1.
@@ -37,5 +37,11 @@ export function Screen({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: spacing.l, gap: spacing.m },
+  content: {
+    padding: spacing.l,
+    gap: spacing.m,
+    width: '100%',
+    maxWidth: maxContentWidth,
+    alignSelf: 'center',
+  },
 });

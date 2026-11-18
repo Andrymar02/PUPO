@@ -2,6 +2,23 @@
 // pupoPalette in Colors.ts, che resta per i colori "di illustrazione" per materia).
 import { pupoPalette } from './Colors';
 
+// Larghezza massima del contenuto: su schermi larghi (browser desktop) evita che le
+// schermate si stirino a tutta pagina; su telefono (sempre più stretto) non ha effetto.
+export const maxContentWidth = 640;
+
+// Colori tra cui scegliere creando una materia (punto 4 del redesign): le 5 varianti già
+// disegnate per materia in Design/PUPO.md, più gli accenti principali della palette.
+export const subjectPalette = [
+  pupoPalette.purple,
+  '#4A7BF7', // blu, come la variante Matematica/Analisi
+  '#D2694A', // terracotta, come Storia/Lettere
+  '#7FAA8B', // verde salvia, come Biologia/Medicina
+  '#7D96B8', // grigio-azzurro, come Informatica
+  '#9A3352', // bordeaux, come Diritto/Economia
+  pupoPalette.mint,
+  pupoPalette.coral,
+] as const;
+
 export const spacing = {
   xs: 4,
   s: 8,
